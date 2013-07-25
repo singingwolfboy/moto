@@ -34,8 +34,7 @@ class AutoScalingResponse(BaseResponse):
         return template.render()
 
     def describe_launch_configurations(self):
-        names = [value[0] for key, value in self.querystring.items()
-                 if key.startswith("LaunchConfigurationNames")]
+        names = self._get_multi_param('LaunchConfigurationNames')
         launch_configurations = autoscaling_backend.describe_launch_configurations(names)
         template = Template(DESCRIBE_LAUNCH_CONFIGURATIONS_TEMPLATE)
         return template.render(launch_configurations=launch_configurations)
@@ -46,6 +45,30 @@ class AutoScalingResponse(BaseResponse):
         template = Template(DELETE_LAUNCH_CONFIGURATION_TEMPLATE)
         return template.render()
 
+    def create_auto_scaling_group(self):
+        autoscaling_backend.create_autoscaling_group(
+            name=self._get_param('AutoScalingGroupName'),
+            availability_zones=self._get_multi_param('AvailabilityZones.member'),
+            desired_capacity=self._get_param('DesiredCapacity'),
+            max_size=self._get_param('MaxSize'),
+            min_size=self._get_param('MinSize'),
+            launch_config_name=self._get_param('LaunchConfigurationName'),
+            vpc_zone_identifier=self._get_param('VPCZoneIdentifier'),
+        )
+        template = Template(CREATE_AUTOSCALING_GROUP_TEMPLATE)
+        return template.render()
+
+    def describe_auto_scaling_groups(self):
+        names = self._get_multi_param("AutoScalingGroupNames")
+        groups = autoscaling_backend.describe_autoscaling_groups(names)
+        template = Template(DESCRIBE_AUTOSCALING_GROUPS_TEMPLATE)
+        return template.render(groups=groups)
+
+    def delete_auto_scaling_group(self):
+        group_name = self._get_param('AutoScalingGroupName')
+        autoscaling_backend.delete_autoscaling_group(group_name)
+        template = Template(DELETE_AUTOSCALING_GROUP_TEMPLATE)
+        return template.render()
 
 CREATE_LAUNCH_CONFIGURATION_TEMPLATE = """<CreateLaunchConfigurationResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 <ResponseMetadata>
@@ -106,3 +129,60 @@ DELETE_LAUNCH_CONFIGURATION_TEMPLATE = """<DeleteLaunchConfigurationResponse xml
     <RequestId>7347261f-97df-11e2-8756-35eEXAMPLE</RequestId>
   </ResponseMetadata>
 </DeleteLaunchConfigurationResponse>"""
+
+CREATE_AUTOSCALING_GROUP_TEMPLATE = """<CreateAutoScalingGroupResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+<ResponseMetadata>
+<RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+</ResponseMetadata>
+</CreateAutoScalingGroupResponse>"""
+
+DESCRIBE_AUTOSCALING_GROUPS_TEMPLATE = """<DescribeAutoScalingGroupsResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+<DescribeAutoScalingGroupsResult>
+    <AutoScalingGroups>
+      {% for group in groups %}
+      <member>
+        <Tags/>
+        <SuspendedProcesses/>
+        <AutoScalingGroupName>{{ group.name }}</AutoScalingGroupName>
+        <HealthCheckType>ELB</HealthCheckType>
+        <CreatedTime>2013-05-06T17:47:15.107Z</CreatedTime>
+        <EnabledMetrics/>
+        <LaunchConfigurationName>{{ group.launch_config_name }}</LaunchConfigurationName>
+        <Instances/>
+        <DesiredCapacity>{{ group.desired_capacity }}</DesiredCapacity>
+        <AvailabilityZones>
+          {% for availability_zone in group.availability_zones %}
+          <member>{{ availability_zone }}</member>
+          {% endfor %}
+        </AvailabilityZones>
+        <LoadBalancerNames>
+          <member>my-test-asg-loadbalancer</member>
+        </LoadBalancerNames>
+        <MinSize>{{ group.min_size }}</MinSize>
+        {% if group.vpc_zone_identifier %}
+          <VPCZoneIdentifier>{{ group.vpc_zone_identifier }}</VPCZoneIdentifier>
+        {% else %}
+          <VPCZoneIdentifier/>
+        {% endif %}
+        <HealthCheckGracePeriod>120</HealthCheckGracePeriod>
+        <DefaultCooldown>300</DefaultCooldown>
+        <AutoScalingGroupARN>arn:aws:autoscaling:us-east-1:803981987763:autoScalingGroup:ca861182-c8f9-4ca7-b1eb-cd35505f5ebb
+        :autoScalingGroupName/my-test-asg-lbs</AutoScalingGroupARN>
+        <TerminationPolicies>
+          <member>Default</member>
+        </TerminationPolicies>
+        <MaxSize>{{ group.max_size }}</MaxSize>
+      </member>
+      {% endfor %}
+    </AutoScalingGroups>
+  </DescribeAutoScalingGroupsResult>
+  <ResponseMetadata>
+    <RequestId>0f02a07d-b677-11e2-9eb0-dd50EXAMPLE</RequestId>
+  </ResponseMetadata>
+</DescribeAutoScalingGroupsResponse>"""
+
+DELETE_AUTOSCALING_GROUP_TEMPLATE = """<DeleteAutoScalingGroupResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <ResponseMetadata>
+    <RequestId>70a76d42-9665-11e2-9fdf-211deEXAMPLE</RequestId>
+  </ResponseMetadata>
+</DeleteAutoScalingGroupResponse>"""

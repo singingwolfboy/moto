@@ -51,6 +51,8 @@ def test_create_launch_configuration_defaults():
     launch_config.name.should.equal('tester')
     launch_config.image_id.should.equal('ami-abcd1234')
     launch_config.instance_type.should.equal('m1.small')
+
+    # Defaults
     launch_config.key_name.should.equal('')
     list(launch_config.security_groups).should.equal([])
     launch_config.user_data.should.equal("")
