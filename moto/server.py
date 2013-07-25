@@ -3,6 +3,7 @@ import sys
 from flask import Flask
 from werkzeug.routing import BaseConverter
 
+from moto.autoscaling import autoscaling_backend  # flake8: noqa
 from moto.dynamodb import dynamodb_backend  # flake8: noqa
 from moto.ec2 import ec2_backend  # flake8: noqa
 from moto.elb import elb_backend  # flake8: noqa
