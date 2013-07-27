@@ -150,3 +150,105 @@ def test_autoscaling_group_describe_instances():
     instances.should.have.length_of(2)
     instance_ids = [instance.id for instance in instances]
     set(autoscale_instance_ids).should.equal(set(instance_ids))
+
+
+@mock_autoscaling
+def test_set_desired_capacity_up():
+    conn = boto.connect_autoscale()
+    config = LaunchConfiguration(
+        name='tester',
+        image_id='ami-abcd1234',
+        instance_type='m1.small',
+    )
+    conn.create_launch_configuration(config)
+
+    group = AutoScalingGroup(
+        name='tester_group',
+        availability_zones=['us-east-1c', 'us-east-1b'],
+        desired_capacity=2,
+        max_size=2,
+        min_size=2,
+        launch_config=config,
+        vpc_zone_identifier='subnet-1234abcd',
+    )
+    conn.create_auto_scaling_group(group)
+
+    group = conn.get_all_groups()[0]
+    group.desired_capacity.should.equal(2)
+    instances = list(conn.get_all_autoscaling_instances())
+    instances.should.have.length_of(2)
+
+    conn.set_desired_capacity("tester_group", 3)
+    group = conn.get_all_groups()[0]
+    group.desired_capacity.should.equal(3)
+
+    instances = list(conn.get_all_autoscaling_instances())
+    instances.should.have.length_of(3)
+
+
+@mock_autoscaling
+def test_set_desired_capacity_down():
+    conn = boto.connect_autoscale()
+    config = LaunchConfiguration(
+        name='tester',
+        image_id='ami-abcd1234',
+        instance_type='m1.small',
+    )
+    conn.create_launch_configuration(config)
+
+    group = AutoScalingGroup(
+        name='tester_group',
+        availability_zones=['us-east-1c', 'us-east-1b'],
+        desired_capacity=2,
+        max_size=2,
+        min_size=2,
+        launch_config=config,
+        vpc_zone_identifier='subnet-1234abcd',
+    )
+    conn.create_auto_scaling_group(group)
+
+    group = conn.get_all_groups()[0]
+    group.desired_capacity.should.equal(2)
+    instances = list(conn.get_all_autoscaling_instances())
+    instances.should.have.length_of(2)
+
+    conn.set_desired_capacity("tester_group", 1)
+    group = conn.get_all_groups()[0]
+    group.desired_capacity.should.equal(1)
+
+    instances = list(conn.get_all_autoscaling_instances())
+    instances.should.have.length_of(1)
+
+
+@mock_autoscaling
+def test_set_desired_capacity_the_same():
+    conn = boto.connect_autoscale()
+    config = LaunchConfiguration(
+        name='tester',
+        image_id='ami-abcd1234',
+        instance_type='m1.small',
+    )
+    conn.create_launch_configuration(config)
+
+    group = AutoScalingGroup(
+        name='tester_group',
+        availability_zones=['us-east-1c', 'us-east-1b'],
+        desired_capacity=2,
+        max_size=2,
+        min_size=2,
+        launch_config=config,
+        vpc_zone_identifier='subnet-1234abcd',
+    )
+    conn.create_auto_scaling_group(group)
+
+    group = conn.get_all_groups()[0]
+    group.desired_capacity.should.equal(2)
+    instances = list(conn.get_all_autoscaling_instances())
+    instances.should.have.length_of(2)
+
+    conn.set_desired_capacity("tester_group", 2)
+    group = conn.get_all_groups()[0]
+    group.desired_capacity.should.equal(2)
+
+    instances = list(conn.get_all_autoscaling_instances())
+    instances.should.have.length_of(2)

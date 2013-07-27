@@ -74,6 +74,13 @@ class AutoScalingResponse(BaseResponse):
         template = Template(DELETE_AUTOSCALING_GROUP_TEMPLATE)
         return template.render()
 
+    def set_desired_capacity(self):
+        group_name = self._get_param('AutoScalingGroupName')
+        desired_capacity = self._get_int_param('DesiredCapacity')
+        autoscaling_backend.set_desired_capacity(group_name, desired_capacity)
+        template = Template(SET_DESIRED_CAPACITY_TEMPLATE)
+        return template.render()
+
     def describe_auto_scaling_instances(self):
         instances = autoscaling_backend.describe_autoscaling_instances()
         template = Template(DESCRIBE_AUTOSCALING_INSTANCES_TEMPLATE)
@@ -269,6 +276,12 @@ DESCRIBE_SCALING_POLICIES_TEMPLATE = """<DescribePoliciesResponse xmlns="http://
     <RequestId>ec3bffad-b739-11e2-b38d-15fbEXAMPLE</RequestId>
   </ResponseMetadata>
 </DescribePoliciesResponse>"""
+
+SET_DESIRED_CAPACITY_TEMPLATE = """<SetDesiredCapacityResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <ResponseMetadata>
+    <RequestId>9fb7e2db-6998-11e2-a985-57c82EXAMPLE</RequestId>
+  </ResponseMetadata>
+</SetDesiredCapacityResponse>"""
 
 DELETE_POLICY_TEMPLATE = """<DeleteScalingPolicyResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <ResponseMetadata>

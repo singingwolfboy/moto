@@ -46,23 +46,43 @@ class FakeAutoScalingGroup(object):
         self.availability_zones = availability_zones
         self.max_size = max_size
         self.min_size = min_size
-        if desired_capacity is None:
-            self.desired_capacity = min_size
-        else:
-            self.desired_capacity = desired_capacity
 
         self.launch_config = autoscaling_backend.launch_configurations[launch_config_name]
         self.launch_config_name = launch_config_name
         self.vpc_zone_identifier = vpc_zone_identifier
 
-        reservation = ec2_backend.add_instances(
-            self.launch_config.image_id,
-            self.desired_capacity,
-            self.launch_config.user_data
-        )
-        for instance in reservation.instances:
-            instance.autoscaling_group = self
-        self.instances = reservation.instances
+        self.instances = []
+        self.set_desired_capacity(desired_capacity)
+
+    def set_desired_capacity(self, new_capacity):
+        if new_capacity is None:
+            self.desired_capacity = self.min_size
+        else:
+            self.desired_capacity = new_capacity
+
+        curr_instance_count = len(self.instances)
+
+        if self.desired_capacity == curr_instance_count:
+            return
+
+        if self.desired_capacity > curr_instance_count:
+            # Need more instances
+            count_needed = self.desired_capacity - curr_instance_count
+            reservation = ec2_backend.add_instances(
+                self.launch_config.image_id,
+                count_needed,
+                self.launch_config.user_data
+            )
+            for instance in reservation.instances:
+                instance.autoscaling_group = self
+            self.instances.extend(reservation.instances)
+        else:
+            # Need to remove some instances
+            count_to_remove = curr_instance_count - self.desired_capacity
+            instances_to_remove = self.instances[:count_to_remove]
+            instance_ids_to_remove = [instance.id for instance in instances_to_remove]
+            ec2_backend.terminate_instances(instance_ids_to_remove)
+            self.instances = self.instances[count_to_remove:]
 
 
 class AutoScalingBackend(BaseBackend):
@@ -130,6 +150,10 @@ class AutoScalingBackend(BaseBackend):
         for group in self.autoscaling_groups.values():
             instances.extend(group.instances)
         return instances
+
+    def set_desired_capacity(self, group_name, desired_capacity):
+        group = self.autoscaling_groups[group_name]
+        group.set_desired_capacity(desired_capacity)
 
     def create_autoscaling_policy(self, name, adjustment_type, as_name,
                                   scaling_adjustment, cooldown):
