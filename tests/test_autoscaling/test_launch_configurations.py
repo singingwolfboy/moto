@@ -17,7 +17,6 @@ def test_create_launch_configuration():
         security_groups=["default", "default2"],
         user_data="This is some user_data",
         instance_monitoring=True,
-        ebs_optimized=False,
         instance_profile_name='arn:aws:iam::123456789012:instance-profile/testing',
         spot_price=0.1)
     conn.create_launch_configuration(config)
@@ -32,7 +31,6 @@ def test_create_launch_configuration():
     launch_config.instance_monitoring.enabled.should.equal('true')
     launch_config.instance_profile_name.should.equal('arn:aws:iam::123456789012:instance-profile/testing')
     launch_config.spot_price.should.equal(0.1)
-    launch_config.ebs_optimized.should.equal(False)
 
 
 @mock_autoscaling
@@ -59,7 +57,6 @@ def test_create_launch_configuration_defaults():
     launch_config.instance_monitoring.enabled.should.equal('false')
     launch_config.instance_profile_name.should.equal(None)
     launch_config.spot_price.should.equal(None)
-    launch_config.ebs_optimized.should.equal(False)
 
 
 @mock_autoscaling
