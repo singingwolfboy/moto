@@ -1,10 +1,12 @@
 import boto
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 from boto.ec2.autoscale.group import AutoScalingGroup
-
+from nose.plugins.attrib import attr
 import sure  # flake8: noqa
+from unittest import skipIf
 
 from moto import mock_autoscaling, mock_ec2
+from tests.helpers import requires_boto_gte
 
 
 @mock_autoscaling
@@ -183,6 +185,7 @@ def test_autoscaling_group_describe_instances():
     set(autoscale_instance_ids).should.equal(set(instance_ids))
 
 
+@requires_boto_gte("2.8")
 @mock_autoscaling
 def test_set_desired_capacity_up():
     conn = boto.connect_autoscale()
@@ -217,6 +220,7 @@ def test_set_desired_capacity_up():
     instances.should.have.length_of(3)
 
 
+@requires_boto_gte("2.8")
 @mock_autoscaling
 def test_set_desired_capacity_down():
     conn = boto.connect_autoscale()
@@ -251,6 +255,7 @@ def test_set_desired_capacity_down():
     instances.should.have.length_of(1)
 
 
+@requires_boto_gte("2.8")
 @mock_autoscaling
 def test_set_desired_capacity_the_same():
     conn = boto.connect_autoscale()
