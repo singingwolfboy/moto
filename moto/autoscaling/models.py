@@ -17,6 +17,14 @@ class FakeScalingPolicy(object):
         else:
             self.cooldown = DEFAULT_COOLDOWN
 
+    def execute(self):
+        if self.adjustment_type == 'ExactCapacity':
+            autoscaling_backend.set_desired_capacity(self.as_name, self.scaling_adjustment)
+        elif self.adjustment_type == 'ChangeInCapacity':
+            autoscaling_backend.change_capacity(self.as_name, self.scaling_adjustment)
+        elif self.adjustment_type == 'PercentChangeInCapacity':
+            autoscaling_backend.change_capacity_percent(self.as_name, self.scaling_adjustment)
+
 
 class FakeLaunchConfiguration(object):
     def __init__(self, name, image_id, key_name, security_groups, user_data,
@@ -155,6 +163,27 @@ class AutoScalingBackend(BaseBackend):
         group = self.autoscaling_groups[group_name]
         group.set_desired_capacity(desired_capacity)
 
+    def change_capacity(self, group_name, scaling_adjustment):
+        group = self.autoscaling_groups[group_name]
+        desired_capacity = group.desired_capacity + scaling_adjustment
+        self.set_desired_capacity(group_name, desired_capacity)
+
+    def change_capacity_percent(self, group_name, scaling_adjustment):
+        """ http://docs.aws.amazon.com/AutoScaling/latest/DeveloperGuide/as-scale-based-on-demand.html
+        If PercentChangeInCapacity returns a value between 0 and 1,
+        Auto Scaling will round it off to 1. If the PercentChangeInCapacity
+        returns a value greater than 1, Auto Scaling will round it off to the
+        lower value. For example, if PercentChangeInCapacity returns 12.5,
+        then Auto Scaling will round it off to 12."""
+        group = self.autoscaling_groups[group_name]
+        percent_change = 1 + (scaling_adjustment / 100.0)
+        desired_capacity = group.desired_capacity * percent_change
+        if group.desired_capacity < desired_capacity < group.desired_capacity + 1:
+            desired_capacity = group.desired_capacity + 1
+        else:
+            desired_capacity = int(desired_capacity)
+        self.set_desired_capacity(group_name, desired_capacity)
+
     def create_autoscaling_policy(self, name, adjustment_type, as_name,
                                   scaling_adjustment, cooldown):
         policy = FakeScalingPolicy(name, adjustment_type, as_name,
@@ -168,5 +197,9 @@ class AutoScalingBackend(BaseBackend):
 
     def delete_policy(self, group_name):
         self.policies.pop(group_name, None)
+
+    def execute_policy(self, group_name):
+        policy = self.policies[group_name]
+        policy.execute()
 
 autoscaling_backend = AutoScalingBackend()

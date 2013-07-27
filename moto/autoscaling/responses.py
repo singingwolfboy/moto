@@ -108,6 +108,13 @@ class AutoScalingResponse(BaseResponse):
         template = Template(DELETE_POLICY_TEMPLATE)
         return template.render()
 
+    def execute_policy(self):
+        group_name = self._get_param('PolicyName')
+        autoscaling_backend.execute_policy(group_name)
+        template = Template(EXECUTE_POLICY_TEMPLATE)
+        return template.render()
+
+
 CREATE_LAUNCH_CONFIGURATION_TEMPLATE = """<CreateLaunchConfigurationResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 <ResponseMetadata>
    <RequestId>7c6e177f-f082-11e1-ac58-3714bEXAMPLE</RequestId>
@@ -282,6 +289,12 @@ SET_DESIRED_CAPACITY_TEMPLATE = """<SetDesiredCapacityResponse xmlns="http://aut
     <RequestId>9fb7e2db-6998-11e2-a985-57c82EXAMPLE</RequestId>
   </ResponseMetadata>
 </SetDesiredCapacityResponse>"""
+
+EXECUTE_POLICY_TEMPLATE = """<ExecuteScalingPolicyResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <ResponseMetadata>
+    <RequestId>70a76d42-9665-11e2-9fdf-211deEXAMPLE</RequestId>
+  </ResponseMetadata>
+</ExecuteScalingPolicyResponse>"""
 
 DELETE_POLICY_TEMPLATE = """<DeleteScalingPolicyResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <ResponseMetadata>

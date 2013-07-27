@@ -109,3 +109,78 @@ def test_delete_policy():
 
     conn.delete_policy('ScaleUp')
     conn.get_all_policies().should.have.length_of(0)
+
+
+@mock_autoscaling
+def test_execute_policy_exact_capacity():
+    group = setup_autoscale_group()
+    conn = boto.connect_autoscale()
+    policy = ScalingPolicy(
+        name='ScaleUp',
+        adjustment_type='ExactCapacity',
+        as_name='tester_group',
+        scaling_adjustment=3,
+    )
+    conn.create_scaling_policy(policy)
+
+    conn.execute_policy("ScaleUp")
+
+    instances = list(conn.get_all_autoscaling_instances())
+    instances.should.have.length_of(3)
+
+
+@mock_autoscaling
+def test_execute_policy_positive_change_in_capacity():
+    group = setup_autoscale_group()
+    conn = boto.connect_autoscale()
+    policy = ScalingPolicy(
+        name='ScaleUp',
+        adjustment_type='ChangeInCapacity',
+        as_name='tester_group',
+        scaling_adjustment=3,
+    )
+    conn.create_scaling_policy(policy)
+
+    conn.execute_policy("ScaleUp")
+
+    instances = list(conn.get_all_autoscaling_instances())
+    instances.should.have.length_of(5)
+
+
+@mock_autoscaling
+def test_execute_policy_percent_change_in_capacity():
+    group = setup_autoscale_group()
+    conn = boto.connect_autoscale()
+    policy = ScalingPolicy(
+        name='ScaleUp',
+        adjustment_type='PercentChangeInCapacity',
+        as_name='tester_group',
+        scaling_adjustment=50,
+    )
+    conn.create_scaling_policy(policy)
+
+    conn.execute_policy("ScaleUp")
+
+    instances = list(conn.get_all_autoscaling_instances())
+    instances.should.have.length_of(3)
+
+
+@mock_autoscaling
+def test_execute_policy_small_percent_change_in_capacity():
+    """ http://docs.aws.amazon.com/AutoScaling/latest/DeveloperGuide/as-scale-based-on-demand.html
+    If PercentChangeInCapacity returns a value between 0 and 1,
+    Auto Scaling will round it off to 1."""
+    group = setup_autoscale_group()
+    conn = boto.connect_autoscale()
+    policy = ScalingPolicy(
+        name='ScaleUp',
+        adjustment_type='PercentChangeInCapacity',
+        as_name='tester_group',
+        scaling_adjustment=1,
+    )
+    conn.create_scaling_policy(policy)
+
+    conn.execute_policy("ScaleUp")
+
+    instances = list(conn.get_all_autoscaling_instances())
+    instances.should.have.length_of(3)
