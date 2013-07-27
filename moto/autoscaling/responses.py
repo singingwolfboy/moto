@@ -68,6 +68,19 @@ class AutoScalingResponse(BaseResponse):
         template = Template(DESCRIBE_AUTOSCALING_GROUPS_TEMPLATE)
         return template.render(groups=groups)
 
+    def update_auto_scaling_group(self):
+        autoscaling_backend.update_autoscaling_group(
+            name=self._get_param('AutoScalingGroupName'),
+            availability_zones=self._get_multi_param('AvailabilityZones.member'),
+            desired_capacity=self._get_int_param('DesiredCapacity'),
+            max_size=self._get_int_param('MaxSize'),
+            min_size=self._get_int_param('MinSize'),
+            launch_config_name=self._get_param('LaunchConfigurationName'),
+            vpc_zone_identifier=self._get_param('VPCZoneIdentifier'),
+        )
+        template = Template(UPDATE_AUTOSCALING_GROUP_TEMPLATE)
+        return template.render()
+
     def delete_auto_scaling_group(self):
         group_name = self._get_param('AutoScalingGroupName')
         autoscaling_backend.delete_autoscaling_group(group_name)
@@ -224,6 +237,12 @@ DESCRIBE_AUTOSCALING_GROUPS_TEMPLATE = """<DescribeAutoScalingGroupsResponse xml
     <RequestId>0f02a07d-b677-11e2-9eb0-dd50EXAMPLE</RequestId>
   </ResponseMetadata>
 </DescribeAutoScalingGroupsResponse>"""
+
+UPDATE_AUTOSCALING_GROUP_TEMPLATE = """<UpdateAutoScalingGroupResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <ResponseMetadata>
+    <RequestId>adafead0-ab8a-11e2-ba13-ab0ccEXAMPLE</RequestId>
+  </ResponseMetadata>
+</UpdateAutoScalingGroupResponse>"""
 
 DELETE_AUTOSCALING_GROUP_TEMPLATE = """<DeleteAutoScalingGroupResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <ResponseMetadata>

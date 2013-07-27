@@ -62,6 +62,18 @@ class FakeAutoScalingGroup(object):
         self.instances = []
         self.set_desired_capacity(desired_capacity)
 
+    def update(self, availability_zones, desired_capacity, max_size, min_size,
+               launch_config_name, vpc_zone_identifier):
+        self.availability_zones = availability_zones
+        self.max_size = max_size
+        self.min_size = min_size
+
+        self.launch_config = autoscaling_backend.launch_configurations[launch_config_name]
+        self.launch_config_name = launch_config_name
+        self.vpc_zone_identifier = vpc_zone_identifier
+
+        self.set_desired_capacity(desired_capacity)
+
     def set_desired_capacity(self, new_capacity):
         if new_capacity is None:
             self.desired_capacity = self.min_size
@@ -141,6 +153,14 @@ class AutoScalingBackend(BaseBackend):
             vpc_zone_identifier=vpc_zone_identifier,
         )
         self.autoscaling_groups[name] = group
+        return group
+
+    def update_autoscaling_group(self, name, availability_zones,
+                                 desired_capacity, max_size, min_size,
+                                 launch_config_name, vpc_zone_identifier):
+        group = self.autoscaling_groups[name]
+        group.update(availability_zones, desired_capacity, max_size,
+                     min_size, launch_config_name, vpc_zone_identifier)
         return group
 
     def describe_autoscaling_groups(self, names):

@@ -97,6 +97,37 @@ def test_autoscaling_group_describe_filter():
 
 
 @mock_autoscaling
+def test_autoscaling_update():
+    conn = boto.connect_autoscale()
+    config = LaunchConfiguration(
+        name='tester',
+        image_id='ami-abcd1234',
+        instance_type='m1.small',
+    )
+    conn.create_launch_configuration(config)
+
+    group = AutoScalingGroup(
+        name='tester_group',
+        availability_zones=['us-east-1c', 'us-east-1b'],
+        desired_capacity=2,
+        max_size=2,
+        min_size=2,
+        launch_config=config,
+        vpc_zone_identifier='subnet-1234abcd',
+    )
+    conn.create_auto_scaling_group(group)
+
+    group = conn.get_all_groups()[0]
+    group.vpc_zone_identifier.should.equal('subnet-1234abcd')
+
+    group.vpc_zone_identifier = 'subnet-5678efgh'
+    group.update()
+
+    group = conn.get_all_groups()[0]
+    group.vpc_zone_identifier.should.equal('subnet-5678efgh')
+
+
+@mock_autoscaling
 def test_autoscaling_group_delete():
     conn = boto.connect_autoscale()
     config = LaunchConfiguration(
