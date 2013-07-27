@@ -4,7 +4,7 @@ from boto.ec2.autoscale.group import AutoScalingGroup
 
 import sure  # flake8: noqa
 
-from moto import mock_autoscaling
+from moto import mock_autoscaling, mock_ec2
 
 
 @mock_autoscaling
@@ -118,3 +118,35 @@ def test_autoscaling_group_delete():
 
     conn.delete_auto_scaling_group('tester_group')
     conn.get_all_groups().should.have.length_of(0)
+
+
+@mock_ec2
+@mock_autoscaling
+def test_autoscaling_group_describe_instances():
+    conn = boto.connect_autoscale()
+    config = LaunchConfiguration(
+        name='tester',
+        image_id='ami-abcd1234',
+        instance_type='m1.small',
+    )
+    conn.create_launch_configuration(config)
+
+    group = AutoScalingGroup(
+        name='tester_group',
+        max_size=2,
+        min_size=2,
+        launch_config=config,
+    )
+    conn.create_auto_scaling_group(group)
+
+    instances = list(conn.get_all_autoscaling_instances())
+    instances.should.have.length_of(2)
+    instances[0].launch_config_name.should.equal('tester')
+    autoscale_instance_ids = [instance.instance_id for instance in instances]
+
+    ec2_conn = boto.connect_ec2()
+    reservations = ec2_conn.get_all_instances()
+    instances = reservations[0].instances
+    instances.should.have.length_of(2)
+    instance_ids = [instance.id for instance in instances]
+    set(autoscale_instance_ids).should.equal(set(instance_ids))

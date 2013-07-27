@@ -1,4 +1,5 @@
 from moto.core import BaseBackend
+from moto.ec2 import ec2_backend
 
 
 class FakeLaunchConfiguration(object):
@@ -34,8 +35,18 @@ class FakeAutoScalingGroup(object):
         else:
             self.desired_capacity = desired_capacity
 
+        self.launch_config = autoscaling_backend.launch_configurations[launch_config_name]
         self.launch_config_name = launch_config_name
         self.vpc_zone_identifier = vpc_zone_identifier
+
+        reservation = ec2_backend.add_instances(
+            self.launch_config.image_id,
+            self.desired_capacity,
+            self.launch_config.user_data
+        )
+        for instance in reservation.instances:
+            instance.autoscaling_group = self
+        self.instances = reservation.instances
 
 
 class AutoScalingBackend(BaseBackend):
@@ -96,5 +107,12 @@ class AutoScalingBackend(BaseBackend):
 
     def delete_autoscaling_group(self, group_name):
         self.autoscaling_groups.pop(group_name, None)
+
+    def describe_autoscaling_instances(self):
+        instances = []
+        for group in self.autoscaling_groups.values():
+            instances.extend(group.instances)
+        return instances
+
 
 autoscaling_backend = AutoScalingBackend()
