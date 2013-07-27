@@ -1,6 +1,22 @@
 from moto.core import BaseBackend
 from moto.ec2 import ec2_backend
 
+# http://docs.aws.amazon.com/AutoScaling/latest/DeveloperGuide/AS_Concepts.html#Cooldown
+DEFAULT_COOLDOWN = 300
+
+
+class FakeScalingPolicy(object):
+    def __init__(self, name, adjustment_type, as_name, scaling_adjustment,
+                 cooldown):
+        self.name = name
+        self.adjustment_type = adjustment_type
+        self.as_name = as_name
+        self.scaling_adjustment = scaling_adjustment
+        if cooldown is not None:
+            self.cooldown = cooldown
+        else:
+            self.cooldown = DEFAULT_COOLDOWN
+
 
 class FakeLaunchConfiguration(object):
     def __init__(self, name, image_id, key_name, security_groups, user_data,
@@ -54,6 +70,7 @@ class AutoScalingBackend(BaseBackend):
     def __init__(self):
         self.autoscaling_groups = {}
         self.launch_configurations = {}
+        self.policies = {}
 
     def create_launch_configuration(self, name, image_id, key_name,
                                     security_groups, user_data, instance_type,
@@ -114,5 +131,18 @@ class AutoScalingBackend(BaseBackend):
             instances.extend(group.instances)
         return instances
 
+    def create_autoscaling_policy(self, name, adjustment_type, as_name,
+                                  scaling_adjustment, cooldown):
+        policy = FakeScalingPolicy(name, adjustment_type, as_name,
+                                   scaling_adjustment, cooldown)
+
+        self.policies[name] = policy
+        return policy
+
+    def describe_policies(self):
+        return self.policies.values()
+
+    def delete_policy(self, group_name):
+        self.policies.pop(group_name, None)
 
 autoscaling_backend = AutoScalingBackend()

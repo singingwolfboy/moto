@@ -79,6 +79,27 @@ class AutoScalingResponse(BaseResponse):
         template = Template(DESCRIBE_AUTOSCALING_INSTANCES_TEMPLATE)
         return template.render(instances=instances)
 
+    def put_scaling_policy(self):
+        policy = autoscaling_backend.create_autoscaling_policy(
+            name=self._get_param('PolicyName'),
+            adjustment_type=self._get_param('AdjustmentType'),
+            as_name=self._get_param('AutoScalingGroupName'),
+            scaling_adjustment=self._get_int_param('ScalingAdjustment'),
+            cooldown=self._get_int_param('Cooldown'),
+        )
+        template = Template(CREATE_SCALING_POLICY_TEMPLATE)
+        return template.render(policy=policy)
+
+    def describe_policies(self):
+        policies = autoscaling_backend.describe_policies()
+        template = Template(DESCRIBE_SCALING_POLICIES_TEMPLATE)
+        return template.render(policies=policies)
+
+    def delete_policy(self):
+        group_name = self._get_param('PolicyName')
+        autoscaling_backend.delete_policy(group_name)
+        template = Template(DELETE_POLICY_TEMPLATE)
+        return template.render()
 
 CREATE_LAUNCH_CONFIGURATION_TEMPLATE = """<CreateLaunchConfigurationResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 <ResponseMetadata>
@@ -215,3 +236,42 @@ DESCRIBE_AUTOSCALING_INSTANCES_TEMPLATE = """<DescribeAutoScalingInstancesRespon
     <RequestId>df992dc3-b72f-11e2-81e1-750aa6EXAMPLE</RequestId>
   </ResponseMetadata>
 </DescribeAutoScalingInstancesResponse>"""
+
+CREATE_SCALING_POLICY_TEMPLATE = """<PutScalingPolicyResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <PutScalingPolicyResult>
+    <PolicyARN>arn:aws:autoscaling:us-east-1:803981987763:scalingPolicy:b0dcf5e8
+-02e6-4e31-9719-0675d0dc31ae:autoScalingGroupName/my-test-asg:policyName/my-scal
+eout-policy</PolicyARN>
+  </PutScalingPolicyResult>
+  <ResponseMetadata>
+    <RequestId>3cfc6fef-c08b-11e2-a697-2922EXAMPLE</RequestId>
+  </ResponseMetadata>
+</PutScalingPolicyResponse>"""
+
+DESCRIBE_SCALING_POLICIES_TEMPLATE = """<DescribePoliciesResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <DescribePoliciesResult>
+    <ScalingPolicies>
+      {% for policy in policies %}
+      <member>
+        <PolicyARN>arn:aws:autoscaling:us-east-1:803981987763:scalingPolicy:c322
+761b-3172-4d56-9a21-0ed9d6161d67:autoScalingGroupName/my-test-asg:policyName/MyScaleDownPolicy</PolicyARN>
+        <AdjustmentType>{{ policy.adjustment_type }}</AdjustmentType>
+        <ScalingAdjustment>{{ policy.scaling_adjustment }}</ScalingAdjustment>
+        <PolicyName>{{ policy.name }}</PolicyName>
+        <AutoScalingGroupName>{{ policy.as_name }}</AutoScalingGroupName>
+        <Cooldown>{{ policy.cooldown }}</Cooldown>
+        <Alarms/>
+      </member>
+      {% endfor %}
+    </ScalingPolicies>
+  </DescribePoliciesResult>
+  <ResponseMetadata>
+    <RequestId>ec3bffad-b739-11e2-b38d-15fbEXAMPLE</RequestId>
+  </ResponseMetadata>
+</DescribePoliciesResponse>"""
+
+DELETE_POLICY_TEMPLATE = """<DeleteScalingPolicyResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <ResponseMetadata>
+    <RequestId>70a76d42-9665-11e2-9fdf-211deEXAMPLE</RequestId>
+  </ResponseMetadata>
+</DeleteScalingPolicyResponse>"""
