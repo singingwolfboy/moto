@@ -19,7 +19,6 @@ from distutils.version import LooseVersion
 from six.moves.urllib.parse import urlparse
 from werkzeug.wrappers import Request
 
-import mock
 from moto import settings
 import responses
 from moto.packages.httpretty import HTTPretty
@@ -28,6 +27,11 @@ from .utils import (
     convert_regex_to_flask_path,
     convert_flask_to_responses_response,
 )
+
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 ACCOUNT_ID = os.environ.get("MOTO_ACCOUNT_ID", "123456789012")
 RESPONSES_VERSION = pkg_resources.get_distribution("responses").version
@@ -434,7 +438,6 @@ class ServerModeMockAWS(BaseMockAWS):
             self.reset()
 
         from boto3 import client as real_boto3_client, resource as real_boto3_resource
-        import mock
 
         def fake_boto3_client(*args, **kwargs):
             region = self._get_region(*args, **kwargs)

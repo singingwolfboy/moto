@@ -1,7 +1,10 @@
 # #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from moto.packages.httpretty.core import (
     HTTPrettyRequest,

@@ -2,7 +2,10 @@ from __future__ import unicode_literals
 import json
 import yaml
 
-from mock import patch
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
 import sure  # noqa
 
 from moto.cloudformation.exceptions import ValidationError
